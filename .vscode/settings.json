@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.jspy": "python"
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
+}
