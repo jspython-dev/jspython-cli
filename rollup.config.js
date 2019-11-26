@@ -5,7 +5,7 @@ const pkg = require('./package.json');
 
 export default {
   input: pkg.main,
-  output: { file: pkg.bin['JSPython-cli'], format: 'cjs', sourcemap: true, compact: true, banner: '#!/usr/bin/env node' },
+  output: { file: pkg.bin['jspython'], format: 'cjs', sourcemap: true, compact: true, banner: '#!/usr/bin/env node' },
   plugins: [
     typescript({
       clean: true
@@ -16,5 +16,5 @@ export default {
       ]
     })
   ],
-  external: ['arg', 'fs', 'JSPython']
+  external: ['arg', 'fs', '@jspython-dev/jspython']
 };

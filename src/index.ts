@@ -1,10 +1,10 @@
 import arg from 'arg';
 import fs from 'fs';
-import { jsPython, PackageToImport } from '@jspython-dev/jspython';
+import { jsPython, PackageToImport, Interpreter, PackageLoader } from '@jspython-dev/jspython';
 
 const pkg = require('../package.json');
 
-export const interpreter = jsPython();
+export const interpreter: Interpreter = jsPython() as Interpreter;
 
 run();
 
@@ -15,7 +15,7 @@ async function run() {
   }
 
   if (options.file) {
-    interpreter.registerPackagesLoader(packageLoader);
+    interpreter.registerPackagesLoader(packageLoader as PackageLoader);
     const scripts = fs.readFileSync(options.file, 'utf8');
     const res = await interpreter.evaluate(scripts);
     console.log('Execution result:\n', res);
@@ -39,7 +39,7 @@ function getOptionsFromArguments(rawArgs: string[]) {
   };
 }
 
-
+/**@type {PackageLoader} */
 function packageLoader(packages: PackageToImport[]): object {
   const libraries: any = {};
   packages.forEach(({ name, as, properties }: PackageToImport) => {
