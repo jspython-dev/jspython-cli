@@ -1,6 +1,6 @@
 import arg from 'arg';
 import fs from 'fs';
-import { jsPython, PackageToImport, Interpreter, PackageLoader } from '@jspython-dev/jspython';
+import { jsPython, Interpreter, PackageLoader } from '@jspython-dev/jspython';
 
 const pkg = require('../package.json');
 
@@ -40,22 +40,6 @@ function getOptionsFromArguments(rawArgs: string[]) {
 }
 
 /**@type {PackageLoader} */
-function packageLoader(packages: PackageToImport[]): object {
-  const libraries: any = {};
-  packages.forEach(({ name, as, properties }: PackageToImport) => {
-    const lib = require(name);
-    if (properties?.length) {
-      properties.forEach((prop) => {
-        libraries[prop.as || prop.name] = lib[prop.name];
-      })
-    } else if (as) {
-      libraries[as] = lib;
-    } else {
-      libraries[name] = lib;
-    }
-    if (as) {
-      libraries[as] = lib;
-    }
-  });
-  return libraries;
+function packageLoader(packageName: string): any {
+    return require(packageName);
 }
