@@ -1,5 +1,5 @@
 {
-  "name": "@jspython-dev/jspython-cli",
+  "name": "jspython-cli",
   "version": "0.0.2",
   "description": "CLI for jspython. Allows you to run jspython (*.jspy) files",
   "main": "src/index.ts",
@@ -28,8 +28,8 @@
   },
   "homepage": "https://github.com/jspython-dev/jspython-cli#readme",
   "dependencies": {
-    "@jspython-dev/jspython": "^0.0.3",
-    "arg": "^4.1.1"
+    "arg": "^4.1.1",
+    "jspython-interpreter": "0.0.3"
   },
   "devDependencies": {
     "rollup": "^1.26.5",

@@ -1,6 +1,6 @@
 import arg from 'arg';
 import fs from 'fs';
-import { jsPython, Interpreter, PackageLoader } from '@jspython-dev/jspython';
+import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
 
 const pkg = require('../package.json');
 
