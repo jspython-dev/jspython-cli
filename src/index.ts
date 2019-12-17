@@ -1,11 +1,15 @@
 import arg from 'arg';
 import fs from 'fs';
 import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
+import { httpGet, httpPost, httpDelete, httpPut } from './http';
 
 const pkg = require('../package.json');
 
 export const interpreter: Interpreter = jsPython() as Interpreter;
-
+interpreter.addFunction('httpGet', httpGet);
+interpreter.addFunction('httpPost', httpPost);
+interpreter.addFunction('httpDelete', httpDelete);
+interpreter.addFunction('httpPut', httpPut);
 run();
 
 async function run() {

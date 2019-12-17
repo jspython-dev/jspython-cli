@@ -1,11 +1,12 @@
 import typescript from 'rollup-plugin-typescript2';
+const pkg = require('./package.json');
 
 export default {
 
   input: 'src/index.ts',
   output: {
     name: 'JSPython-cli',
-    file: 'bin/JSPython-cli',
+    file: pkg.bin['jspython'],
     format: 'cjs',
     sourcemap: true,
     banner: '#!/usr/bin/env node'
