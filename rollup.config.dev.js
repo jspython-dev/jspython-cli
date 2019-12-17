@@ -14,7 +14,7 @@ export default {
   plugins: [
     typescript()
   ],
-  external: ['arg', 'fs', 'JSPython', 'json5'],
+  external: ['arg', 'fs', 'jspython-interpreter', 'json5', 'http', 'https'],
   watch: {
     exclude: ['node_modules/**'],
     include: 'src/**'

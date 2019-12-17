@@ -16,5 +16,5 @@ export default {
       ]
     })
   ],
-  external: ['arg', 'fs', '@jspython-dev/jspython']
+  external: ['arg', 'fs', 'jspython-interpreter', 'http', 'https']
 };

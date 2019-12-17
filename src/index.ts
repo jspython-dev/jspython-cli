@@ -4,12 +4,20 @@ import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
 import { httpGet, httpPost, httpDelete, httpPut } from './http';
 
 const pkg = require('../package.json');
-
+const context: any = {
+  asserts: []
+}
 export const interpreter: Interpreter = jsPython() as Interpreter;
 interpreter.addFunction('httpGet', httpGet);
 interpreter.addFunction('httpPost', httpPost);
 interpreter.addFunction('httpDelete', httpDelete);
 interpreter.addFunction('httpPut', httpPut);
+interpreter.addFunction('assert', (condition: boolean, name?: string, description?: string) => {
+  context.asserts.push({ condition, name, description });
+});
+interpreter.addFunction('showAsserts', (condition: boolean, name?: string, description?: string) => {
+  console.table(context.asserts);
+});
 run();
 
 async function run() {
@@ -21,7 +29,8 @@ async function run() {
   if (options.file) {
     interpreter.registerPackagesLoader(packageLoader as PackageLoader);
     const scripts = fs.readFileSync(options.file, 'utf8');
-    const res = await interpreter.evaluate(scripts);
+    context.asserts.length = 0;
+    const res = await interpreter.evaluate(scripts, context);
     console.log('Execution result:\n', res);
     console.log('Finish');
   }
