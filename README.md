@@ -1,11 +1,11 @@
-# jspython CLI.
+# JSPython CLI.
 
-Command line interface to run [jspython](https://github.com/jspython-dev/jspython) files (*.jspy)
+We provide a command line interface to run [JSPython](https://github.com/jspython-dev/jspython) scripts
 
-### Install
+### Install from NPM
 
 ```
-  npm install -g @jspython-dev/jspython-cli
+  npm install -g jspython-cli
 ```
 
 ### Run in terminal
@@ -16,10 +16,27 @@ Command line interface to run [jspython](https://github.com/jspython-dev/jspytho
 
 ```
 
-### Development
-Run example using node. (Works only if you have `@jspython-dev/jspython-cli` devDependencies in you project)
+### Pass parameters to script
+In CLI
 ```
-node ./bin/jspython --file=examples/project/axios-test.jspy
-node ./bin/jspython --file examples/project/parse.jspy
+jspython --file=path/to/jspython/file --param1=value --param
+jspython path/to/jspython/file param1=value param
+```
+In script
+```py
+params("param1") == "value" # true
+params("param") == false # true
+```
+
+### Save evaluate log into file
+```
+jspython --file=path/to/jspython/file.jspy --output=path/to/log.txt
+```
+
+### Development
+Run example using node. (Works only if you have build project `npm run build`)
+```
+node ./bin/jspython --file=../jspython-examples/axios-test.jspy
+node ./bin/jspython --file ../jspython-examples/parse.jspy
 ```
 
