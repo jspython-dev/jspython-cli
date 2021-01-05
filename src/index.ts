@@ -67,7 +67,7 @@ function getOptionsFromArguments(rawArgs: string[]) {
     permissive: true
   });
 
-  const params = args._.reduce((obj: {[key: string]: any}, a: string) => {
+  const params = args._.reduce((obj: { [key: string]: any }, a: string) => {
     const kv = a.replace('--', '');
     let [key, val]: any = kv.split('=');
     if (kv === key) {
@@ -83,12 +83,22 @@ function getOptionsFromArguments(rawArgs: string[]) {
     output: args['--output']
   };
 
-  context.params = {...res, ...params};
+  context.params = { ...res, ...params };
 
   return res;
 }
 
 /**@type {PackageLoader} */
 function packageLoader(packageName: string): any {
-    return require(packageName);
+  if (['fs', 'path', 'readline', 'timers', 'child_process', 'util', 'zlib', 'stream', 'net', 'https', 'http', 'events', 'os', 'buffer']
+    .includes(packageName)) {
+    return require(packageName)
+  }
+
+  try {
+    return require(`${process.cwd().split('\\').join('/')}/node_modules/${packageName}`);
+  }
+  catch (err) {
+    console.log('Import Error: ', err);
+  }
 }
