@@ -20,7 +20,8 @@ interpreter.addFunction('showAsserts', () => {
   console.table(context.asserts);
 });
 interpreter.addFunction('params', (name: string) => {
-  return context.params[name];
+  const value = context.params[name];
+  return value === undefined ? null : value;
 });
 
 run();
@@ -48,9 +49,12 @@ async function run() {
     interpreter.registerPackagesLoader(packageLoader as PackageLoader);
     const scripts = fs.readFileSync(options.file, 'utf8');
     context.asserts.length = 0;
-    const res = await interpreter.evaluate(scripts);
-    console.log('Execution result:\n', res);
-    console.log('Finish');
+    console.log("JSPython (c) FalconSoft Ltd")
+    console.log(`${options.file}`)
+    const res = await interpreter.evaluate(scripts, undefined, undefined, options.file);
+    if (res !== null) {
+      console.log(res);
+    }
   }
 }
 
@@ -90,15 +94,20 @@ function getOptionsFromArguments(rawArgs: string[]) {
 
 /**@type {PackageLoader} */
 function packageLoader(packageName: string): any {
-  if (['fs', 'path', 'readline', 'timers', 'child_process', 'util', 'zlib', 'stream', 'net', 'https', 'http', 'events', 'os', 'buffer']
-    .includes(packageName)) {
-    return require(packageName)
-  }
-
   try {
+    if (['fs', 'path', 'readline', 'timers', 'child_process', 'util', 'zlib', 'stream', 'net', 'https', 'http', 'events', 'os', 'buffer']
+      .includes(packageName)) {
+      return require(packageName)
+    }
+
+    if (packageName.toLowerCase().endsWith('.js') || packageName.toLowerCase().endsWith('.json')) {
+      return require(`${process.cwd().split('\\').join('/')}/${packageName}`)
+    }
+
     return require(`${process.cwd().split('\\').join('/')}/node_modules/${packageName}`);
   }
   catch (err) {
     console.log('Import Error: ', err);
+    throw err;
   }
 }
