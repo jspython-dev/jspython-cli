@@ -1,18 +1,16 @@
 import arg from 'arg';
 import fs from 'fs';
 import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
-import { httpGet, httpPost, httpDelete, httpPut } from './http';
 
 const pkg = require('../package.json');
+const appConfig = require(`${process.cwd().split('\\').join('/')}/jspy.config.js`) 
+  || require(`${process.cwd().split('\\').join('/')}/jspy.config.json`)
+
 const context: any = {
   asserts: [],
   params: {}
 }
 export const interpreter: Interpreter = jsPython() as Interpreter;
-interpreter.addFunction('httpGet', httpGet);
-interpreter.addFunction('httpPost', httpPost);
-interpreter.addFunction('httpDelete', httpDelete);
-interpreter.addFunction('httpPut', httpPut);
 interpreter.addFunction('assert', (condition: boolean, name?: string, description?: string) => {
   context.asserts.push({ condition, name, description });
 });
@@ -29,7 +27,8 @@ run();
 async function run() {
   const options = getOptionsFromArguments(process.argv);
   if (options.version) {
-    console.log(`Version:\n${pkg.version}\n`);
+    console.log(interpreter.jsPythonInfo());
+    console.log(`JSPython cli v${(pkg ||{}).version}\n`);
   }
 
   if (options.output) {
@@ -49,8 +48,8 @@ async function run() {
     interpreter.registerPackagesLoader(packageLoader as PackageLoader);
     const scripts = fs.readFileSync(options.file, 'utf8');
     context.asserts.length = 0;
-    console.log("JSPython (c) FalconSoft Ltd")
-    console.log(`${options.file}`)
+    console.log(interpreter.jsPythonInfo())
+    console.log(`> ${options.file}`)
     const res = await interpreter.evaluate(scripts, undefined, undefined, options.file);
     if (res !== null) {
       console.log(res);
