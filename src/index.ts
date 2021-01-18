@@ -5,6 +5,7 @@ import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
 const pkg = require('../package.json');
 const appConfig = require(`${process.cwd().split('\\').join('/')}/jspy.config.js`) 
   || require(`${process.cwd().split('\\').join('/')}/jspy.config.json`)
+  || {};
 
 const context: any = {
   asserts: [],
@@ -50,7 +51,7 @@ async function run() {
     context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
     console.log(`> ${options.file}`)
-    const res = await interpreter.evaluate(scripts, undefined, undefined, options.file);
+    const res = await interpreter.evaluate(scripts, appConfig, undefined, options.file);
     if (res !== null) {
       console.log(res);
     }
