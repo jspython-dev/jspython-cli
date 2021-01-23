@@ -3,33 +3,67 @@ import fs from 'fs';
 import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
 
 const pkg = require('../package.json');
-const appConfig = require(`${process.cwd().split('\\').join('/')}/jspy.config.js`) 
-  || require(`${process.cwd().split('\\').join('/')}/jspy.config.json`)
-  || {};
 
 const context: any = {
   asserts: [],
   params: {}
 }
-export const interpreter: Interpreter = jsPython() as Interpreter;
-interpreter.addFunction('assert', (condition: boolean, name?: string, description?: string) => {
-  context.asserts.push({ condition, name, description });
-});
-interpreter.addFunction('showAsserts', () => {
-  console.table(context.asserts);
-});
-interpreter.addFunction('params', (name: string) => {
-  const value = context.params[name];
-  return value === undefined ? null : value;
-});
+
+const appFolder = process.cwd().split('\\').join('/');
+
+const initialScope: Record<string, any> = {
+  app: {}
+};
+
+const interpreter: Interpreter = jsPython() as Interpreter;
 
 run();
 
+async function initialize() {
+  // process app.json (if exists)
+  // add configuration to the 'app'
+  if (fs.existsSync(`${appFolder}/app.json`)) {
+    const app = require(`${appFolder}/app.json`);
+    initialScope.app = Object.assign(initialScope.app || {}, app);
+  }
+
+  // process app.js (if exists)
+  //  - run _init
+  //  - delete _ init
+  //  - run _initAsync
+  //  - delete _initAsync
+  //  - load content into 'app'
+  if (fs.existsSync(`${appFolder}/app.js`)) {
+    const app = require(`${appFolder}/app.js`);
+
+    if (typeof app._init == 'function') {
+      app._init();
+      delete app._init;
+    }
+
+    if (typeof app._initAsync == 'function') {
+      await app._initAsync();
+      delete app._initAsync;
+    }
+
+    Object.assign(initialScope, app);
+  }
+
+  initialScope.assert = (condition: boolean, name?: string, description?: string) => context.asserts.push({ condition, name, description });
+  initialScope.showAsserts = () => console.table(context.asserts);
+  initialScope.params = (name: string) => {
+    const value = context.params[name];
+    return value === undefined ? null : value;
+  }
+}
+
 async function run() {
+  await initialize();
+
   const options = getOptionsFromArguments(process.argv);
   if (options.version) {
     console.log(interpreter.jsPythonInfo());
-    console.log(`JSPython cli v${(pkg ||{}).version}\n`);
+    console.log(`JSPython cli v${(pkg || {}).version}\n`);
   }
 
   if (options.output) {
@@ -51,7 +85,7 @@ async function run() {
     context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
     console.log(`> ${options.file}`)
-    const res = await interpreter.evaluate(scripts, appConfig, undefined, options.file);
+    const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
     if (res !== null) {
       console.log(res);
     }
@@ -61,9 +95,11 @@ async function run() {
 function getOptionsFromArguments(rawArgs: string[]) {
   const args = arg({
     '--file': String,
+    '--entryFunction': String,
     '--version': Boolean,
     '--output': String,
     '-f': '--file',
+    '-ef': '--entryFunction',
     '-v': '--version',
     '-o': '--output'
   }, {
@@ -84,7 +120,8 @@ function getOptionsFromArguments(rawArgs: string[]) {
   const res = {
     file: args['--file'] || (rawArgs.length === 3 && !rawArgs[2].startsWith('-') ? rawArgs[2] : ''),
     version: args['--version'],
-    output: args['--output']
+    output: args['--output'],
+    entryFunction: args['--entryFunction']
   };
 
   context.params = { ...res, ...params };
