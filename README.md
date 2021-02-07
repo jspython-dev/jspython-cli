@@ -89,6 +89,7 @@ Run example using node. (Works only if you have build project `npm run build`)
 ```
 node ./bin/jspython --file=../jspython-examples/axios-test.jspy
 node ./bin/jspython --file ../jspython-examples/parse.jspy
+node ./bin/jspython --file=test.jspy --srcRoot=../jspython-examples/
 ```
 
 # License

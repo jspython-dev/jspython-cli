@@ -30,7 +30,7 @@
   "homepage": "https://github.com/jspython-dev/jspython-cli#readme",
   "dependencies": {
     "arg": "^4.1.2",
-    "jspython-interpreter": "~2.0.13"
+    "jspython-interpreter": "~2.0.14"
   },
   "devDependencies": {
     "rollup": "^1.27.13",
