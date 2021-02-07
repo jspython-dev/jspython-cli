@@ -8,7 +8,9 @@ We provide a command line interface to run [JSPython](https://github.com/jspytho
   npm install -g jspython-cli
 ```
 
-## Run in terminal
+## Usage
+
+### Run in terminal
 ```
   jspython path/to/jspython/file
   jspython --file path/to/jspython/file
@@ -16,7 +18,7 @@ We provide a command line interface to run [JSPython](https://github.com/jspytho
 
 ```
 
-## Pass parameters to script
+### Pass parameters to script
 In CLI
 ```
 jspython --file=path/to/jspython/file --param1=value --param
@@ -28,17 +30,17 @@ params("param1") == "value" # true
 params("param") == false # true
 ```
 
-## Run file
+### Run file
 ```
 jspython --file=path/to/jspython/file.jspy
 ```
 
-## Run file and log into file
+### Run file and log into file
 ```
 jspython --file=path/to/jspython/file.jspy --output=path/to/log.txt
 ```
 
-## Run specific function from the file
+### Run specific function from the file
 ```
 jspython --file=path/to/jspython/file.jspy --entryFunction=myFunc1
 ```
@@ -49,11 +51,11 @@ jspython -f=path/to/jspython/file.jspy -e=myFunc1
 
 
 
-## Run file when you have your source code in a nested folder
+### Run file when you have your source code in a nested folder
 ```
 jspython --file=path/to/jspython/file.jspy --srcRoot=src
 ```
-In this case it expects package.json and node_modules on the root level
+Normally you would expect package.json and node_modules to be in the root level and all scripts in the `src` folder
 
 ```
 -|- .git
@@ -62,7 +64,7 @@ In this case it expects package.json and node_modules on the root level
 -|- .ws
 -|- node_modules
 -|- src
-     -|-my_code.jspy
+     -|- my_code.jspy
 -|- package.json
 ```
 
@@ -74,7 +76,7 @@ or
 > jspython -f=my_code.jspy -s=src --param1=some_Value
 
 
-## Show version
+### Version info
 
 > jspython -v
 
