@@ -9,6 +9,16 @@ const context: any = {
   params: {}
 }
 
+// catch the uncaught errors that weren't wrapped in a domain or try catch statement
+// do not use this in modules, but only in applications, as otherwise we could have multiple of these bound
+process
+  .on('unhandledRejection', (reason, p) => {
+    console.error(reason, 'Unhandled Rejection at Promise', p);
+  })
+  .on('uncaughtException', err => {
+    console.error(err, 'Uncaught Exception thrown');
+    process.exit(1);
+  });
 
 const initialScope: Record<string, any> = {
   app: {}
@@ -17,8 +27,6 @@ const initialScope: Record<string, any> = {
 const rootFolder = process.cwd().split('\\').join('/');
 const interpreter: Interpreter = jsPython() as Interpreter;
 const options = getOptionsFromArguments(process.argv);
-
-run();
 
 function trimChar(text: string, charToRemove: string): string {
   while (text.charAt(0) == charToRemove) {
@@ -79,7 +87,6 @@ function registerFileLoader(interpreter: Interpreter): Interpreter {
   return interpreter;
 }
 
-
 async function initialize(baseSource: string) {
   // process app.json (if exists)
   // add configuration to the 'app'
@@ -115,46 +122,6 @@ async function initialize(baseSource: string) {
   initialScope.params = (name: string) => {
     const value = context.params[name];
     return value === undefined ? null : value;
-  }
-}
-
-async function run() {
-  if (options.version) {
-    console.log(interpreter.jsPythonInfo());
-    console.log(`JSPython cli v${(pkg || {}).version}\n`);
-  }
-
-  if (options.output) {
-    var util = require('util');
-    var logFile = fs.createWriteStream(options.output, { flags: 'w' });
-    var logStdout = process.stdout;
-
-    console.log = function () {
-      const req = new RegExp('\\x1b\\[\\d\\dm', 'g');
-      logFile.write(util.format.apply(null, Array.from(arguments).map(a => a && a.replace ? a.replace(req, '') : a)) + '\n');
-      logStdout.write(util.format.apply(null, arguments) + '\n');
-    }
-    console.error = console.log;
-  }
-
-  await initialize(options.srcRoot);
-
-  if (options.file) {
-    interpreter.registerPackagesLoader(packageLoader as PackageLoader);
-    registerFileLoader(interpreter)
-    const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
-    context.asserts.length = 0;
-    console.log(interpreter.jsPythonInfo())
-    console.log(`> ${options.file}`)
-    try {
-      const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
-      if (res !== null) {
-        console.log(res);
-      }
-    } catch (err) {
-      console.log('JSPython execution failed: ', err?.message || err, err);
-      throw err;
-    }
   }
 }
 
@@ -222,3 +189,49 @@ function packageLoader(packageName: string): any {
     throw err;
   }
 }
+
+async function main() {
+  try {
+    if (options.version) {
+      console.log(interpreter.jsPythonInfo());
+      console.log(`JSPython cli v${(pkg || {}).version}\n`);
+    }
+
+    if (options.output) {
+      var util = require('util');
+      var logFile = fs.createWriteStream(options.output, { flags: 'w' });
+      var logStdout = process.stdout;
+
+      console.log = function () {
+        const req = new RegExp('\\x1b\\[\\d\\dm', 'g');
+        logFile.write(util.format.apply(null, Array.from(arguments).map(a => a && a.replace ? a.replace(req, '') : a)) + '\n');
+        logStdout.write(util.format.apply(null, arguments) + '\n');
+      }
+      console.error = console.log;
+    }
+
+    await initialize(options.srcRoot);
+
+    if (options.file) {
+      interpreter.registerPackagesLoader(packageLoader as PackageLoader);
+      registerFileLoader(interpreter)
+      const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
+      context.asserts.length = 0;
+      console.log(interpreter.jsPythonInfo())
+      console.log(`> ${options.file}`)
+      try {
+        const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+        console.log('Finished.', res !== null ? res : '');
+      } catch (err) {
+        console.log('JSPython execution failed: ', err?.message || err, err);
+        throw err;
+      }
+    }
+  } catch (e) {
+    console.log('Main function error:', e?.message || e)
+  }
+}
+
+main()
+  .then(s => console.log('Completed:', s))
+  .catch(e => console.log('Error:', e?.message || e))

@@ -1,6 +1,6 @@
 {
   "name": "jspython-cli",
-  "version": "2.0.14",
+  "version": "2.0.18",
   "description": "CLI for jspython. Allows you to run jspython (*.jspy) files",
   "main": "src/index.ts",
   "bin": {
