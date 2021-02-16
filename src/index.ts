@@ -233,5 +233,5 @@ async function main() {
 }
 
 main()
-  .then(s => console.log('Completed:', s))
-  .catch(e => console.log('Error:', e?.message || e))
+  .then(s => console.log('completed:', s))
+  .catch(e => console.log('error:', e?.message || e))
