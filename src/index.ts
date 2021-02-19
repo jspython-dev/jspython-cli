@@ -1,6 +1,7 @@
 import arg from 'arg';
 import fs from 'fs';
 import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
+var util = require('util');
 
 const pkg = require('../package.json');
 
@@ -191,47 +192,44 @@ function packageLoader(packageName: string): any {
 }
 
 async function main() {
-  try {
-    if (options.version) {
-      console.log(interpreter.jsPythonInfo());
-      console.log(`JSPython cli v${(pkg || {}).version}\n`);
+  if (options.version) {
+    console.log(interpreter.jsPythonInfo());
+    console.log(`JSPython cli v${(pkg || {}).version}\n`);
+  }
+
+  if (options.output) {
+    var logFile = fs.createWriteStream(options.output, { flags: 'w' });
+    var logStdout = process.stdout;
+
+    console.log = function () {
+      const req = new RegExp('\\x1b\\[\\d\\dm', 'g');
+      logFile.write(util.format.apply(null, Array.from(arguments).map(a => a && a.replace ? a.replace(req, '') : a)) + '\n');
+      logStdout.write(util.format.apply(null, arguments) + '\n');
     }
+    console.error = console.log;
+  }
 
-    if (options.output) {
-      var util = require('util');
-      var logFile = fs.createWriteStream(options.output, { flags: 'w' });
-      var logStdout = process.stdout;
+  await initialize(options.srcRoot);
 
-      console.log = function () {
-        const req = new RegExp('\\x1b\\[\\d\\dm', 'g');
-        logFile.write(util.format.apply(null, Array.from(arguments).map(a => a && a.replace ? a.replace(req, '') : a)) + '\n');
-        logStdout.write(util.format.apply(null, arguments) + '\n');
+  if (options.file) {
+    interpreter.registerPackagesLoader(packageLoader as PackageLoader);
+    registerFileLoader(interpreter)
+    const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
+    context.asserts.length = 0;
+    console.log(interpreter.jsPythonInfo())
+    console.log(`> ${options.file}`)
+    try {
+      const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+
+      if (!!res || res === 0) {
+        console.log('>', res);
       }
-      console.error = console.log;
+    } catch (err) {
+      console.log('JSPython execution failed: ', err?.message || err, err);
+      throw err;
     }
-
-    await initialize(options.srcRoot);
-
-    if (options.file) {
-      interpreter.registerPackagesLoader(packageLoader as PackageLoader);
-      registerFileLoader(interpreter)
-      const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
-      context.asserts.length = 0;
-      console.log(interpreter.jsPythonInfo())
-      console.log(`> ${options.file}`)
-      try {
-        const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
-        console.log('Finished.', res !== null ? res : '');
-      } catch (err) {
-        console.log('JSPython execution failed: ', err?.message || err, err);
-        throw err;
-      }
-    }
-  } catch (e) {
-    console.log('Main function error:', e?.message || e)
   }
 }
 
 main()
-  .then(s => console.log('completed:', s))
   .catch(e => console.log('error:', e?.message || e))
