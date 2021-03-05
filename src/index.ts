@@ -41,53 +41,6 @@ function trimChar(text: string, charToRemove: string): string {
   return text;
 }
 
-function registerFileLoader(interpreter: Interpreter): Interpreter {
-  function getScriptFunctionsListWithArgs(scripts: string): any {
-    if (scripts) {
-      return scripts.split('\n').map(line => {
-        const match = line.match(/(def\s)(.*)(\(.*\)):/);
-        if (match) {
-          const args = (match[3] as string).replace(/[\(\)\s+]/g, '').split(',') as string[];
-          return [match[2].replace(/ /g, '') as string, args] as [string, string[]];
-        }
-      }).filter(func => Boolean(func));
-    }
-  }
-
-  const loader = async (filePath: string) => {
-    const module = filePath;
-    try {
-
-      const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}.jspy`, 'utf8');
-      const funcs = getScriptFunctionsListWithArgs(script);
-      const result = funcs
-        .reduce((prev: any, [func, paramKeys]: any) => {
-          prev[func] = async (...args: any) => {
-            const params = (paramKeys || []).reduce((prev2: any, key: any, i: any) => {
-              prev2[key] = args[i] || null;
-              return prev2;
-            }, {});
-            const context = {};// this.getAppContext();
-            try {
-              return await interpreter.evaluate(script, { ...context, ...params }, func, module);
-            } catch (e) {
-              throw Error(`${e.message} `);
-            }
-          };
-          return prev;
-        }, {}
-        );
-
-      return result;
-    } catch (e) {
-      console.error(e);
-    }
-
-  };
-  interpreter.registerFileLoader(loader);
-  return interpreter;
-}
-
 async function initialize(baseSource: string) {
   // process app.json (if exists)
   // add configuration to the 'app'
@@ -171,6 +124,21 @@ function getOptionsFromArguments(rawArgs: string[]) {
   return res;
 }
 
+function moduleLoader(filePath: string): Promise<string> {
+  try {
+    const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}.jspy`, 'utf8');
+    return Promise.resolve(script);
+  } catch (e) {
+    try {
+      // try without JSPY
+      const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}`, 'utf8');
+      return Promise.resolve(script);
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+}
+
 /**@type {PackageLoader} */
 function packageLoader(packageName: string): any {
   try {
@@ -213,7 +181,8 @@ async function main() {
 
   if (options.file) {
     interpreter.registerPackagesLoader(packageLoader as PackageLoader);
-    registerFileLoader(interpreter)
+    interpreter.registerModuleLoader(moduleLoader);
+
     const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
     context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
