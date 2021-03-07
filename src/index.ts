@@ -180,15 +180,15 @@ async function main() {
   await initialize(options.srcRoot);
 
   if (options.file) {
-    interpreter.registerPackagesLoader(packageLoader as PackageLoader);
-    interpreter.registerModuleLoader(moduleLoader);
-
     const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
     context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
     console.log(`> ${options.file}`)
     try {
-      const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+      const res = await interpreter
+          .registerPackagesLoader(packageLoader as PackageLoader)
+          .registerModuleLoader(moduleLoader)      
+          .evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
 
       if (!!res || res === 0) {
         console.log('>', res);
