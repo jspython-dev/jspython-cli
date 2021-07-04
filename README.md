@@ -1,6 +1,6 @@
 # JSPython CLI.
 
-We provide a command line interface to run [JSPython](https://github.com/jspython-dev/jspython) scripts
+Command line interface to run [JSPython](https://github.com/jspython-dev/jspython) in NodeJS environment
 
 ## Install from NPM
 

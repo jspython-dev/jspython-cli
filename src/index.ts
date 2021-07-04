@@ -22,7 +22,8 @@ process
   });
 
 const initialScope: Record<string, any> = {
-  app: {}
+  app: {},
+  session: {}
 };
 
 const rootFolder = process.cwd().split('\\').join('/');
@@ -134,6 +135,7 @@ function moduleLoader(filePath: string): Promise<string> {
       const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}`, 'utf8');
       return Promise.resolve(script);
     } catch (e) {
+      console.log('* module loader error ', e?.message || e)
       return Promise.reject(e);
     }
   }
