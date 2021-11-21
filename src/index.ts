@@ -43,12 +43,6 @@ function trimChar(text: string, charToRemove: string): string {
 }
 
 async function initialize(baseSource: string) {
-  // process app.json (if exists)
-  // add configuration to the 'app'
-  if (fs.existsSync(`${rootFolder}/${baseSource}app.json`)) {
-    const app = require(`${rootFolder}/${baseSource}app.json`);
-    initialScope.app = Object.assign(initialScope.app || {}, app);
-  }
 
   // process app.js (if exists)
   //  - run _init
@@ -56,8 +50,15 @@ async function initialize(baseSource: string) {
   //  - run _initAsync
   //  - delete _initAsync
   //  - load content into 'app'
-  if (fs.existsSync(`${rootFolder}/${baseSource}app.js`)) {
-    const app = require(`${rootFolder}/${baseSource}app.js`);
+
+  let appJsPath = `${rootFolder}/${baseSource}app.js`;
+  console.log({ rootFolder, baseSource })
+  if (!fs.existsSync(appJsPath)) {
+    appJsPath = `${rootFolder}/src/app.js`
+  }
+
+  if (fs.existsSync(appJsPath)) {
+    const app = require(appJsPath);
 
     if (typeof app._init == 'function') {
       app._init();
@@ -126,18 +127,23 @@ function getOptionsFromArguments(rawArgs: string[]) {
 }
 
 function moduleLoader(filePath: string): Promise<string> {
+  filePath = trimChar(trimChar(filePath, '/'), '.');
+  let fileName = `${options.srcRoot}${filePath}.jspy`;
+
+  if (!fs.existsSync(fileName)) {
+    fileName = `${options.srcRoot}${filePath}`;
+  }
+
+  if (!fs.existsSync(fileName)) {
+    fileName = `src/${filePath}`;
+  }
+
   try {
-    const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}.jspy`, 'utf8');
+    const script = fs.readFileSync(fileName, 'utf8');
     return Promise.resolve(script);
   } catch (e) {
-    try {
-      // try without JSPY
-      const script = fs.readFileSync(`${options.srcRoot}${trimChar(filePath, '/')}`, 'utf8');
-      return Promise.resolve(script);
-    } catch (e) {
-      console.log('* module loader error ', e?.message || e)
-      return Promise.reject(e);
-    }
+    console.log('* module loader error ', e?.message || e)
+    return Promise.reject(e);
   }
 }
 
@@ -162,6 +168,17 @@ function packageLoader(packageName: string): any {
 }
 
 async function main() {
+  if (!options.file && !options.version) {
+    console.log(interpreter.jsPythonInfo());
+    console.log(`JSPython cli v${(pkg || {}).version}\n`);
+    console.log(` :\> jspython (fileName.jspy)`);
+    console.log(` :\> jspython -f=(fileName.jspy)`);
+    console.log(` :\> jspython --file=(fileName.jspy)`);
+    console.log(` :\> jspython --file=(fileName.jspy) --srcRoot=src`);
+    console.log(' ');
+    return;
+  }
+
   if (options.version) {
     console.log(interpreter.jsPythonInfo());
     console.log(`JSPython cli v${(pkg || {}).version}\n`);
@@ -182,15 +199,22 @@ async function main() {
   await initialize(options.srcRoot);
 
   if (options.file) {
-    const scripts = fs.readFileSync(`${options.srcRoot}${options.file}`, 'utf8');
+    let fileName = `${options.srcRoot}${options.file}`;
+
+    // try to check if file exists in 'src' folder
+    if (!fs.existsSync(fileName)) {
+      fileName = `src/${options.file}`;
+    }
+
+    const scripts = fs.readFileSync(fileName, 'utf8');
     context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
     console.log(`> ${options.file}`)
     try {
       const res = await interpreter
-          .registerPackagesLoader(packageLoader as PackageLoader)
-          .registerModuleLoader(moduleLoader)      
-          .evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+        .registerPackagesLoader(packageLoader as PackageLoader)
+        .registerModuleLoader(moduleLoader)
+        .evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
 
       if (!!res || res === 0) {
         console.log('>', res);
