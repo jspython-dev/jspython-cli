@@ -1,14 +1,12 @@
 import arg from 'arg';
 import fs from 'fs';
-import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
+import { Interpreter } from 'jspython-interpreter';
+import { jsPythonForNode } from './jspython-node';
+import { InterpreterOptions } from './types';
+import { trimChar } from './utils';
 var util = require('util');
 
 const pkg = require('../package.json');
-
-const context: any = {
-  asserts: [],
-  params: {}
-}
 
 // catch the uncaught errors that weren't wrapped in a domain or try catch statement
 // do not use this in modules, but only in applications, as otherwise we could have multiple of these bound
@@ -27,20 +25,8 @@ const initialScope: Record<string, any> = {
 };
 
 const rootFolder = process.cwd().split('\\').join('/');
-const interpreter: Interpreter = jsPython() as Interpreter;
 const options = getOptionsFromArguments(process.argv);
-
-function trimChar(text: string, charToRemove: string): string {
-  while (text.charAt(0) == charToRemove) {
-    text = text.substring(1);
-  }
-
-  while (text.charAt(text.length - 1) == charToRemove) {
-    text = text.substring(0, text.length - 1);
-  }
-
-  return text;
-}
+const interpreter: Interpreter = jsPythonForNode(options) as Interpreter;
 
 async function initialize(baseSource: string) {
 
@@ -72,16 +58,9 @@ async function initialize(baseSource: string) {
 
     Object.assign(initialScope, app);
   }
-
-  initialScope.assert = (condition: boolean, name?: string, description?: string) => context.asserts.push({ condition, name, description });
-  initialScope.showAsserts = () => console.table(context.asserts);
-  initialScope.params = (name: string) => {
-    const value = context.params[name];
-    return value === undefined ? null : value;
-  }
 }
 
-function getOptionsFromArguments(rawArgs: string[]) {
+function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
   const args = arg({
     '--file': String,
     '--srcRoot': String,
@@ -108,7 +87,7 @@ function getOptionsFromArguments(rawArgs: string[]) {
     return obj;
   }, {});
 
-  const res = {
+  const res: InterpreterOptions = {
     file: args['--file'] || (rawArgs.length === 3 && !rawArgs[2].startsWith('-') ? rawArgs[2] : ''),
     version: args['--version'],
     output: args['--output'],
@@ -121,50 +100,9 @@ function getOptionsFromArguments(rawArgs: string[]) {
     res.srcRoot = res.srcRoot + '/';
   }
 
-  context.params = { ...res, ...params };
+  res.params = { ...res, ...params };
 
   return res;
-}
-
-function moduleLoader(filePath: string): Promise<string> {
-  filePath = trimChar(trimChar(filePath, '/'), '.');
-  let fileName = `${options.srcRoot}${filePath}.jspy`;
-
-  if (!fs.existsSync(fileName)) {
-    fileName = `${options.srcRoot}${filePath}`;
-  }
-
-  if (!fs.existsSync(fileName)) {
-    fileName = `src/${filePath}`;
-  }
-
-  try {
-    const script = fs.readFileSync(fileName, 'utf8');
-    return Promise.resolve(script);
-  } catch (e) {
-    console.log('* module loader error ', e?.message || e)
-    return Promise.reject(e);
-  }
-}
-
-/**@type {PackageLoader} */
-function packageLoader(packageName: string): any {
-  try {
-    if (['fs', 'path', 'readline', 'timers', 'child_process', 'util', 'zlib', 'stream', 'net', 'https', 'http', 'events', 'os', 'buffer']
-      .includes(packageName)) {
-      return require(packageName)
-    }
-
-    if (packageName.toLowerCase().endsWith('.js') || packageName.toLowerCase().endsWith('.json')) {
-      return require(`${rootFolder}/${options.srcRoot}${packageName}`)
-    }
-
-    return require(`${rootFolder}/node_modules/${packageName}`);
-  }
-  catch (err) {
-    console.log('Import Error: ', err?.message || err);
-    throw err;
-  }
 }
 
 async function main() {
@@ -207,14 +145,10 @@ async function main() {
     }
 
     const scripts = fs.readFileSync(fileName, 'utf8');
-    context.asserts.length = 0;
     console.log(interpreter.jsPythonInfo())
     console.log(`> ${options.file}`)
     try {
-      const res = await interpreter
-        .registerPackagesLoader(packageLoader as PackageLoader)
-        .registerModuleLoader(moduleLoader)
-        .evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+      const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
 
       if (!!res || res === 0) {
         console.log('>', res);
