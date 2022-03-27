@@ -31,14 +31,16 @@ export function jsPythonForNode(options: InterpreterOptions = {
     .registerModuleLoader(moduleLoader);
 
   const evaluate = interpreter.evaluate;
-  interpreter.evaluate = function() {
+
+  interpreter.evaluate = async function(script: string, evaluationContext?: object | undefined, entryFunctionName?: string | undefined, moduleName?: string | undefined) {
     context.asserts.length = 0;
-    return evaluate.apply(interpreter, arguments as any);
+    await initialize(options.srcRoot);
+    return evaluate.call(interpreter, script, evaluationContext, entryFunctionName, moduleName);
   }
 
-  interpreter.evaluateFile = function(filePath: string) {
+  interpreter.evaluateFile = function(filePath: string, context = {}) {
     const script = getScript(filePath);
-    return interpreter.evaluate(script, {});
+    return interpreter.evaluate(script, context, options.entryFunction);
   }
 
   return interpreter;
@@ -93,4 +95,36 @@ function getScript(fileName: string): string {
 
   const scripts = fs.readFileSync(fileName, 'utf8');
   return scripts;
+}
+
+async function initialize(baseSource: string) {
+
+  // process app.js (if exists)
+  //  - run _init
+  //  - delete _ init
+  //  - run _initAsync
+  //  - delete _initAsync
+  //  - load content into 'app'
+
+  let appJsPath = `${rootFolder}/${baseSource}app.js`;
+  console.log({ rootFolder, baseSource })
+  if (!fs.existsSync(appJsPath)) {
+    appJsPath = `${rootFolder}/src/app.js`
+  }
+
+  if (fs.existsSync(appJsPath)) {
+    const app = require(appJsPath);
+
+    if (typeof app._init == 'function') {
+      app._init();
+      delete app._init;
+    }
+
+    if (typeof app._initAsync == 'function') {
+      await app._initAsync();
+      delete app._initAsync;
+    }
+
+    Object.assign(initialScope, app);
+  }
 }

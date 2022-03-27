@@ -24,41 +24,8 @@ const initialScope: Record<string, any> = {
   session: {}
 };
 
-const rootFolder = process.cwd().split('\\').join('/');
 const options = getOptionsFromArguments(process.argv);
 const interpreter: Interpreter = jsPythonForNode(options) as Interpreter;
-
-async function initialize(baseSource: string) {
-
-  // process app.js (if exists)
-  //  - run _init
-  //  - delete _ init
-  //  - run _initAsync
-  //  - delete _initAsync
-  //  - load content into 'app'
-
-  let appJsPath = `${rootFolder}/${baseSource}app.js`;
-  console.log({ rootFolder, baseSource })
-  if (!fs.existsSync(appJsPath)) {
-    appJsPath = `${rootFolder}/src/app.js`
-  }
-
-  if (fs.existsSync(appJsPath)) {
-    const app = require(appJsPath);
-
-    if (typeof app._init == 'function') {
-      app._init();
-      delete app._init;
-    }
-
-    if (typeof app._initAsync == 'function') {
-      await app._initAsync();
-      delete app._initAsync;
-    }
-
-    Object.assign(initialScope, app);
-  }
-}
 
 function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
   const args = arg({
@@ -133,8 +100,6 @@ async function main() {
     }
     console.error = console.log;
   }
-
-  await initialize(options.srcRoot);
 
   if (options.file) {
     let fileName = `${options.srcRoot}${options.file}`;
