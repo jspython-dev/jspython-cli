@@ -62,7 +62,7 @@ export function jsPythonForNode(options: InterpreterOptions = {
       const script = fs.readFileSync(fileName, 'utf8');
       return Promise.resolve(script);
     } catch (e) {
-      console.log('* module loader error ', e?.message || e)
+      console.log('* module loader error ', (e as Error)?.message || e)
       return Promise.reject(e);
     }
   }
@@ -82,7 +82,7 @@ export function jsPythonForNode(options: InterpreterOptions = {
       return require(`${rootFolder}/node_modules/${packageName}`);
     }
     catch (err) {
-      console.log('Import Error: ', err?.message || err);
+      console.log('Import Error: ', (err as Error)?.message ?? err);
       throw err;
     }
   }

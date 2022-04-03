@@ -119,7 +119,7 @@ async function main() {
         console.log('>', res);
       }
     } catch (err) {
-      console.log('JSPython execution failed: ', err?.message || err, err);
+      console.log('JSPython execution failed: ', (err as Error)?.message || err, err);
       throw err;
     }
   }

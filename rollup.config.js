@@ -3,25 +3,30 @@ import copy from 'rollup-plugin-copy'
 
 const pkg = require('./package.json');
 
+const external = ['fs', 'jspython-interpreter'];
+
 export default [{
-  input: 'src/index.ts',
-  output: { file: pkg.bin['jspython'], format: 'cjs', sourcemap: true, compact: true, banner: '#!/usr/bin/env node' },
+  input: 'src/cli.ts',
+  output: { file: pkg.bin['jspython'], format: 'cjs', sourcemap: false, compact: true, banner: '#!/usr/bin/env node' },
   plugins: [
     typescript({
-      clean: true
+      clean: true,
+      tsconfigOverride: {
+        compilerOptions: { declaration: false }
+      }
     }),
     copy({
       targets: [
-        { src: 'src/examples', dest: 'dist' }
+        { src: 'src/examples', dest: 'lib' }
       ]
     })
   ],
-  external: ['arg', 'fs', 'jspython-interpreter', 'http', 'https']
+  external: ['arg', 'http', 'https', ...external]
 }, {
-  input: 'src/jspython-node.ts',
+  input: 'src/public-api.ts',
   output: [
     {
-      file: 'dist/index.js',
+      file: pkg.main,
       format: 'cjs'
     }
   ],
@@ -29,5 +34,6 @@ export default [{
     typescript({
       clean: true
     })
-  ]
+  ],
+  external
 }];
