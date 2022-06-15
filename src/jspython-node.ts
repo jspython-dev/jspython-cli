@@ -11,18 +11,21 @@ type NodeJsInterpreter = Interpreter & { evaluateFile: (fileName: string) => Pro
 const context: any = {
   asserts: [],
   params: {}
-}
+};
 
-initialScope.assert = (condition: boolean, name?: string, description?: string) => context.asserts.push({ condition, name, description });
-  initialScope.showAsserts = () => console.table(context.asserts);
-  initialScope.params = (name: string) => {
-    const value = context.params[name];
-    return value === undefined ? null : value;
+initialScope.assert = (condition: boolean, name?: string, description?: string) =>
+  context.asserts.push({ condition, name, description });
+initialScope.showAsserts = () => console.table(context.asserts);
+initialScope.params = (name: string) => {
+  const value = context.params[name];
+  return value === undefined ? null : value;
+};
+
+export function jsPythonForNode(
+  options: InterpreterOptions = {
+    srcRoot: ''
   }
-
-export function jsPythonForNode(options: InterpreterOptions = {
-  srcRoot: ''
-}): NodeJsInterpreter {
+): NodeJsInterpreter {
   const interpreter: NodeJsInterpreter = jsPython() as NodeJsInterpreter;
   Object.assign(context.params, options.params);
 
@@ -32,26 +35,30 @@ export function jsPythonForNode(options: InterpreterOptions = {
 
   const evaluate = interpreter.evaluate;
 
-  interpreter.evaluate = async function(script: string, evaluationContext?: object | undefined, entryFunctionName?: string | undefined, moduleName?: string | undefined) {
+  interpreter.evaluate = async function (
+    script: string,
+    evaluationContext?: object | undefined,
+    entryFunctionName?: string | undefined,
+    moduleName?: string | undefined
+  ) {
     context.asserts.length = 0;
-    await initialize(options.srcRoot);
+    await initialize(options.srcRoot || '');
     return evaluate.call(interpreter, script, evaluationContext, entryFunctionName, moduleName);
-  }
+  };
 
-  interpreter.evaluateFile = function(filePath: string, context = {}) {
+  interpreter.evaluateFile = function (filePath: string, context = {}) {
     const script = getScript(filePath);
     return interpreter.evaluate(script, context, options.entryFunction);
-  }
+  };
 
   return interpreter;
 
-
   function moduleLoader(filePath: string): Promise<string> {
     filePath = trimChar(trimChar(filePath, '/'), '.');
-    let fileName = `${options.srcRoot}${filePath}.jspy`;
+    let fileName = `${options.srcRoot || ''}${filePath}.jspy`;
 
     if (!fs.existsSync(fileName)) {
-      fileName = `${options.srcRoot}${filePath}`;
+      fileName = `${options.srcRoot || ''}${filePath}`;
     }
 
     if (!fs.existsSync(fileName)) {
@@ -62,7 +69,7 @@ export function jsPythonForNode(options: InterpreterOptions = {
       const script = fs.readFileSync(fileName, 'utf8');
       return Promise.resolve(script);
     } catch (e) {
-      console.log('* module loader error ', (e as Error)?.message || e)
+      console.log('* module loader error ', (e as Error)?.message || e);
       return Promise.reject(e);
     }
   }
@@ -70,18 +77,36 @@ export function jsPythonForNode(options: InterpreterOptions = {
   /**@type {PackageLoader} */
   function packageLoader(packageName: string): any {
     try {
-      if (['fs', 'path', 'readline', 'timers', 'child_process', 'util', 'zlib', 'stream', 'net', 'https', 'http', 'events', 'os', 'buffer']
-        .includes(packageName)) {
-        return require(packageName)
+      if (
+        [
+          'fs',
+          'path',
+          'readline',
+          'timers',
+          'child_process',
+          'util',
+          'zlib',
+          'stream',
+          'net',
+          'https',
+          'http',
+          'events',
+          'os',
+          'buffer'
+        ].includes(packageName)
+      ) {
+        return require(packageName);
       }
 
-      if (packageName.toLowerCase().endsWith('.js') || packageName.toLowerCase().endsWith('.json')) {
-        return require(`${rootFolder}/${options.srcRoot}${packageName}`)
+      if (
+        packageName.toLowerCase().endsWith('.js') ||
+        packageName.toLowerCase().endsWith('.json')
+      ) {
+        return require(`${rootFolder}/${options.srcRoot || ''}${packageName}`);
       }
 
       return require(`${rootFolder}/node_modules/${packageName}`);
-    }
-    catch (err) {
+    } catch (err) {
       console.log('Import Error: ', (err as Error)?.message ?? err);
       throw err;
     }
@@ -90,7 +115,7 @@ export function jsPythonForNode(options: InterpreterOptions = {
 
 function getScript(fileName: string): string {
   if (!fs.existsSync(fileName)) {
-    throw Error(`File not found`)
+    throw Error(`File not found`);
   }
 
   const scripts = fs.readFileSync(fileName, 'utf8');
@@ -98,7 +123,6 @@ function getScript(fileName: string): string {
 }
 
 async function initialize(baseSource: string) {
-
   // process app.js (if exists)
   //  - run _init
   //  - delete _ init
@@ -107,9 +131,9 @@ async function initialize(baseSource: string) {
   //  - load content into 'app'
 
   let appJsPath = `${rootFolder}/${baseSource}app.js`;
-  console.log({ rootFolder, baseSource })
+  console.log({ rootFolder, baseSource });
   if (!fs.existsSync(appJsPath)) {
-    appJsPath = `${rootFolder}/src/app.js`
+    appJsPath = `${rootFolder}/src/app.js`;
   }
 
   if (fs.existsSync(appJsPath)) {

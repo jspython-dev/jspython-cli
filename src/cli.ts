@@ -19,30 +19,30 @@ process
     process.exit(1);
   });
 
+const options = getOptionsFromArguments(process.argv);
 const initialScope: Record<string, any> = {
-  app: {},
-  session: {}
+  session: {},
+  params: options.params
 };
 
-const options = getOptionsFromArguments(process.argv);
 const interpreter: Interpreter = jsPythonForNode(options) as Interpreter;
 
 function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
-  const args = arg({
-    '--file': String,
-    '--srcRoot': String,
-    '--entryFunction': String,
-    '--version': Boolean,
-    '--output': String,
-    '-f': '--file',
-    '-s': '--srcRoot',
-    '-e': '--entryFunction',
-    '-v': '--version',
-    '-o': '--output'
-  }, {
-    argv: rawArgs.slice(2),
-    permissive: true
-  });
+  const args = arg(
+    {
+      '--file': String,
+      '--srcRoot': String,
+      '--entryFunction': String,
+      '--version': Boolean,
+      '--output': String,
+      '-f': '--file',
+      '-s': '--srcRoot',
+      '-e': '--entryFunction',
+      '-v': '--version',
+      '-o': '--output'
+    },
+    { permissive: true, argv: process.argv.slice(2) }
+  );
 
   const params = args._.reduce((obj: { [key: string]: any }, a: string) => {
     const kv = a.replace('--', '');
@@ -55,15 +55,23 @@ function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
   }, {});
 
   const res: InterpreterOptions = {
-    file: args['--file'] || (rawArgs.length === 3 && !rawArgs[2].startsWith('-') ? rawArgs[2] : ''),
-    version: args['--version'],
-    output: args['--output'],
-    entryFunction: args['--entryFunction'],
-    srcRoot: args['--srcRoot'] || ''
+    file: args['--file'] || (rawArgs.length === 3 && !rawArgs[2].startsWith('-') ? rawArgs[2] : '')
   };
 
-  res.srcRoot = trimChar(res.srcRoot || '', '/');
-  if (res.srcRoot.length) {
+  if (args['--version']) {
+    res.version = args['--version'];
+  }
+  if (args['--output']) {
+    res.output = args['--output'];
+  }
+  if (args['--entryFunction']) {
+    res.entryFunction = args['--entryFunction'];
+  }
+  if (args['--srcRoot']) {
+    res.srcRoot = args['--srcRoot'];
+  }
+
+  if (trimChar(res.srcRoot || '', '/').length) {
     res.srcRoot = res.srcRoot + '/';
   }
 
@@ -73,20 +81,21 @@ function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
 }
 
 async function main() {
-  if (!options.file && !options.version) {
+  if (options.version) {
+    console.log(interpreter.jsPythonInfo());
+    console.log(`JSPython cli v${(pkg || {}).version}\n`);
+    return;
+  }
+
+  if (!options.file) {
     console.log(interpreter.jsPythonInfo());
     console.log(`JSPython cli v${(pkg || {}).version}\n`);
     console.log(` :\> jspython (fileName.jspy)`);
-    console.log(` :\> jspython -f=(fileName.jspy)`);
+    console.log(` :\> jspython -f (fileName.jspy)`);
     console.log(` :\> jspython --file=(fileName.jspy)`);
     console.log(` :\> jspython --file=(fileName.jspy) --srcRoot=src`);
     console.log(' ');
     return;
-  }
-
-  if (options.version) {
-    console.log(interpreter.jsPythonInfo());
-    console.log(`JSPython cli v${(pkg || {}).version}\n`);
   }
 
   if (options.output) {
@@ -95,14 +104,19 @@ async function main() {
 
     console.log = function () {
       const req = new RegExp('\\x1b\\[\\d\\dm', 'g');
-      logFile.write(util.format.apply(null, Array.from(arguments).map(a => a && a.replace ? a.replace(req, '') : a)) + '\n');
+      logFile.write(
+        util.format.apply(
+          null,
+          Array.from(arguments).map(a => (a && a.replace ? a.replace(req, '') : a))
+        ) + '\n'
+      );
       logStdout.write(util.format.apply(null, arguments) + '\n');
-    }
+    };
     console.error = console.log;
   }
 
   if (options.file) {
-    let fileName = `${options.srcRoot}${options.file}`;
+    let fileName = `${options.srcRoot || ''}${options.file}`;
 
     // try to check if file exists in 'src' folder
     if (!fs.existsSync(fileName)) {
@@ -110,10 +124,15 @@ async function main() {
     }
 
     const scripts = fs.readFileSync(fileName, 'utf8');
-    console.log(interpreter.jsPythonInfo())
-    console.log(`> ${options.file}`)
+    console.log(interpreter.jsPythonInfo());
+    console.log(`> ${options.file}`);
     try {
-      const res = await interpreter.evaluate(scripts, initialScope, options.entryFunction || undefined, options.file);
+      const res = await interpreter.evaluate(
+        scripts,
+        initialScope,
+        options.entryFunction || undefined,
+        options.file
+      );
 
       if (!!res || res === 0) {
         console.log('>', res);
@@ -125,5 +144,4 @@ async function main() {
   }
 }
 
-main()
-  .catch(e => console.log('error:', e?.message || e))
+main().catch(e => console.log('error:', e?.message || e));

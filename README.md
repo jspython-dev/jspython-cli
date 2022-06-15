@@ -73,7 +73,7 @@ Then, from a root folder you can:
 
 or
 
-> jspython -f=my_code.jspy -s=src --param1=some_Value
+> jspython -f my_code.jspy -s src --param1=some_Value
 
 
 ### Version info
@@ -87,8 +87,7 @@ or
 ## Development
 Run example using node. (Works only if you have build project `npm run build`)
 ```
-node ./bin/jspython --file=../jspython-examples/axios-test.jspy
-node ./bin/jspython --file ../jspython-examples/parse.jspy
+node ./bin/jspython --file=../jspython-examples/test.jspy
 node ./bin/jspython --file=test.jspy --srcRoot=../jspython-examples/
 ```
 

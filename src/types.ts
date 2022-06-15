@@ -1,6 +1,6 @@
 export interface InterpreterOptions {
   file?: string;
-  srcRoot: string;
+  srcRoot?: string;
   entryFunction?: string;
   version?: boolean;
   output?: string;
