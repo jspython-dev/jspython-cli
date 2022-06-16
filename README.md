@@ -12,8 +12,7 @@ Command line interface to run [JSPython](https://github.com/jspython-dev/jspytho
 
 ### Run in terminal
 ```
-  jspython path/to/jspython/file
-  jspython --file path/to/jspython/file
+  jspython --f path/to/jspython/file
   jspython --file=test.jspy
 
 ```
@@ -26,8 +25,8 @@ jspython path/to/jspython/file param1=value param
 ```
 In script
 ```py
-params("param1") == "value" # true
-params("param") == false # true
+params.param1 == "value" # true
+params.param == false # true
 ```
 
 ### Run file
@@ -46,7 +45,7 @@ jspython --file=path/to/jspython/file.jspy --entryFunction=myFunc1
 ```
 or
 ```
-jspython -f=path/to/jspython/file.jspy -e=myFunc1
+jspython -f path/to/jspython/file.jspy -e myFunc1
 ```
 
 
