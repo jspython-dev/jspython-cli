@@ -1,21 +1,113 @@
 import fs from 'fs';
 import { jsPython, Interpreter, PackageLoader } from 'jspython-interpreter';
+import { Assert } from './assert';
 import { InterpreterOptions } from './types';
 import { trimChar } from './utils';
 
 const rootFolder = process.cwd().split('\\').join('/');
-const initialScope: any = {};
+export const initialScope: any = {
+  asserts: [] as AssertInfo[]
+};
 
 type NodeJsInterpreter = Interpreter & { evaluateFile: (fileName: string) => Promise<any> };
+export type AssertInfo = { success: boolean; name: string; description?: string };
+type LogInfo = { level: 'info' | 'fail' | 'success'; message: string; time: Date; logId?: string };
 
-const context: any = {
-  asserts: [],
+const context: {
+  params: any;
+} = {
   params: {}
 };
 
-initialScope.assert = (condition: boolean, name?: string, description?: string) =>
-  context.asserts.push({ condition, name, description });
-initialScope.showAsserts = () => console.table(context.asserts);
+function logFn(msg: LogInfo): void {
+  const level = msg.level === 'success' ? msg.level : msg.level + '   ';
+
+  console.log(`| ${msg.time.toTimeString().slice(0, 8)} | ${level} | ${msg.message}`);
+}
+
+function assert(name: string, dataContext?: boolean | any): Assert | void {
+  // an original case when
+  if (typeof dataContext === 'boolean') {
+    logFn({
+      level: dataContext ? 'success' : 'fail',
+      message: name || '',
+      time: new Date()
+    });
+    initialScope.asserts.push({ success: !!dataContext, name });
+    return;
+  }
+
+  function assertCallback(success: boolean, message: string) {
+    logFn({
+      logId: name,
+      level: success ? 'success' : 'fail',
+      message: `${name} ${message ? ':' : ''} ${message || ''}`,
+      time: new Date()
+    });
+
+    const existingAssert = initialScope.asserts?.find((a: AssertInfo) => a.name === name);
+    if (existingAssert) {
+      // only if condition it is not fail yet
+      if (!!existingAssert.success) {
+        existingAssert.success = !!success;
+        existingAssert.description = message;
+      }
+    } else {
+      initialScope.asserts.push({ success: !!success, name: name, description: message });
+    }
+  }
+
+  return new Assert(name, dataContext, assertCallback);
+}
+
+function getScript(fileName: string): string {
+  if (!fs.existsSync(fileName)) {
+    throw Error(`File not found`);
+  }
+
+  const scripts = fs.readFileSync(fileName, 'utf8');
+  return scripts;
+}
+
+async function initialize(baseSource: string) {
+  // process app.js (if exists)
+  //  - run _init
+  //  - delete _ init
+  //  - run _initAsync
+  //  - delete _initAsync
+  //  - load content into 'app'
+
+  let appJsPath = `${rootFolder}/${baseSource}app.js`;
+  console.log({ rootFolder, baseSource });
+  if (!fs.existsSync(appJsPath)) {
+    appJsPath = `${rootFolder}/src/app.js`;
+  }
+
+  if (fs.existsSync(appJsPath)) {
+    const app = require(appJsPath);
+
+    if (typeof app._init == 'function') {
+      app._init();
+      delete app._init;
+    }
+
+    if (typeof app._initAsync == 'function') {
+      await app._initAsync();
+      delete app._initAsync;
+    }
+
+    Object.assign(initialScope, app);
+  }
+}
+
+initialScope.assert = (name: string, dataContext: any) => assert(name, dataContext);
+initialScope.showAsserts = () => console.table(initialScope.asserts);
+initialScope.print = (...args: any) =>
+  logFn({
+    time: new Date(),
+    level: 'info',
+    message: args.map((v: any) => (typeof v === 'object' ? JSON.stringify(v) : v)).join(' ')
+  });
 initialScope.params = (name: string) => {
   const value = context.params[name];
   return value === undefined ? null : value;
@@ -41,7 +133,7 @@ export function jsPythonForNode(
     entryFunctionName?: string | undefined,
     moduleName?: string | undefined
   ) {
-    context.asserts.length = 0;
+    initialScope.asserts.splice(0, initialScope.asserts.length);
     await initialize(options.srcRoot || '');
     return evaluate.call(interpreter, script, evaluationContext, entryFunctionName, moduleName);
   };
@@ -110,45 +202,5 @@ export function jsPythonForNode(
       console.log('Import Error: ', (err as Error)?.message ?? err);
       throw err;
     }
-  }
-}
-
-function getScript(fileName: string): string {
-  if (!fs.existsSync(fileName)) {
-    throw Error(`File not found`);
-  }
-
-  const scripts = fs.readFileSync(fileName, 'utf8');
-  return scripts;
-}
-
-async function initialize(baseSource: string) {
-  // process app.js (if exists)
-  //  - run _init
-  //  - delete _ init
-  //  - run _initAsync
-  //  - delete _initAsync
-  //  - load content into 'app'
-
-  let appJsPath = `${rootFolder}/${baseSource}app.js`;
-  console.log({ rootFolder, baseSource });
-  if (!fs.existsSync(appJsPath)) {
-    appJsPath = `${rootFolder}/src/app.js`;
-  }
-
-  if (fs.existsSync(appJsPath)) {
-    const app = require(appJsPath);
-
-    if (typeof app._init == 'function') {
-      app._init();
-      delete app._init;
-    }
-
-    if (typeof app._initAsync == 'function') {
-      await app._initAsync();
-      delete app._initAsync;
-    }
-
-    Object.assign(initialScope, app);
   }
 }

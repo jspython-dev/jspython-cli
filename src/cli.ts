@@ -1,7 +1,11 @@
 import arg from 'arg';
 import fs from 'fs';
 import { Interpreter } from 'jspython-interpreter';
-import { jsPythonForNode } from './jspython-node';
+import {
+  AssertInfo,
+  initialScope,
+  jsPythonForNode
+} from './jspython-node';
 import { InterpreterOptions } from './types';
 import { trimChar } from './utils';
 var util = require('util');
@@ -20,10 +24,7 @@ process
   });
 
 const options = getOptionsFromArguments(process.argv);
-const initialScope: Record<string, any> = {
-  session: {},
-  params: options.params
-};
+const jspyContext: Record<string, any> = { ...initialScope, ...{ params: options.params } };
 
 const interpreter: Interpreter = jsPythonForNode(options) as Interpreter;
 
@@ -129,10 +130,16 @@ async function main() {
     try {
       const res = await interpreter.evaluate(
         scripts,
-        initialScope,
+        jspyContext,
         options.entryFunction || undefined,
         options.file
       );
+
+      if (!!jspyContext.asserts?.length) {
+        const asserts = (jspyContext.asserts || []) as AssertInfo[];
+        console.log(`  > assert success : ${asserts.filter(a => a.success).length}`);
+        console.log(`  > assert failed  : ${asserts.filter(a => !a.success).length}`);
+      }
 
       if (!!res || res === 0) {
         console.log('>', res);
