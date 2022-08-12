@@ -113,13 +113,15 @@ initialScope.params = (name: string) => {
   return value === undefined ? null : value;
 };
 
-export function jsPythonForNode(
+export async function jsPythonForNode(
   options: InterpreterOptions = {
     srcRoot: ''
   }
-): NodeJsInterpreter {
+): Promise<NodeJsInterpreter> {
   const interpreter: NodeJsInterpreter = jsPython() as NodeJsInterpreter;
   Object.assign(context.params, options.params);
+
+  await initialize(options.srcRoot || '');
 
   interpreter
     .registerPackagesLoader(packageLoader as PackageLoader)
@@ -134,7 +136,6 @@ export function jsPythonForNode(
     moduleName?: string | undefined
   ) {
     initialScope.asserts.splice(0, initialScope.asserts.length);
-    await initialize(options.srcRoot || '');
     return evaluate.call(interpreter, script, evaluationContext, entryFunctionName, moduleName);
   };
 

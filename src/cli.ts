@@ -1,11 +1,7 @@
 import arg from 'arg';
 import fs from 'fs';
 import { Interpreter } from 'jspython-interpreter';
-import {
-  AssertInfo,
-  initialScope,
-  jsPythonForNode
-} from './jspython-node';
+import { AssertInfo, initialScope, jsPythonForNode } from './jspython-node';
 import { InterpreterOptions } from './types';
 import { trimChar } from './utils';
 var util = require('util');
@@ -22,11 +18,6 @@ process
     console.error(err, 'Uncaught Exception thrown');
     process.exit(1);
   });
-
-const options = getOptionsFromArguments(process.argv);
-const jspyContext: Record<string, any> = { ...initialScope, ...{ params: options.params } };
-
-const interpreter: Interpreter = jsPythonForNode(options) as Interpreter;
 
 function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
   const args = arg(
@@ -82,6 +73,10 @@ function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
 }
 
 async function main() {
+  const options = getOptionsFromArguments(process.argv);
+  const interpreter: Interpreter = (await jsPythonForNode(options)) as Interpreter;
+  const jspyContext: Record<string, any> = { ...initialScope, ...{ params: options.params } };
+
   if (options.version) {
     console.log(interpreter.jsPythonInfo());
     console.log(`JSPython cli v${(pkg || {}).version}\n`);
