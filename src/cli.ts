@@ -90,6 +90,7 @@ async function main() {
     console.log(` :\> jspython -f (fileName.jspy)`);
     console.log(` :\> jspython --file=(fileName.jspy)`);
     console.log(` :\> jspython --file=(fileName.jspy) --srcRoot=src`);
+    console.log(` :\> jspython --file=(fileName.jspy) --param1=someValue1 --param2=someValue2`);
     console.log(' ');
     return;
   }

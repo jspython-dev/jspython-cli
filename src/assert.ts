@@ -1,4 +1,3 @@
-
 export class Assert {
   #chainedCheckCount: number = 1;
   public status: boolean = true;
@@ -42,6 +41,26 @@ export class Assert {
         return e !== r;
       },
       (e, r) => `Expected '${e}' is the same as received '${r}'`
+    );
+  }
+
+  isTruthy(value: unknown): Assert {
+    return this.assertFunction(
+      value,
+      null,
+      (e, r) => !!e,
+      (e, r) =>
+        `Value '${e}' is not Truthy - https://developer.mozilla.org/en-US/docs/Glossary/Truthy`
+    );
+  }
+
+  isFalsy(value: unknown): Assert {
+    return this.assertFunction(
+      value,
+      null,
+      (e, r) => !e,
+      (e, r) =>
+        `Value '${e}' is not Falsy - https://developer.mozilla.org/en-US/docs/Glossary/Falsy`
     );
   }
 

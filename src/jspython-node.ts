@@ -101,7 +101,13 @@ async function initialize(baseSource: string) {
 }
 
 initialScope.assert = (name: string, dataContext: any) => assert(name, dataContext);
-initialScope.showAsserts = () => console.table(initialScope.asserts);
+initialScope.showAsserts = () =>
+  console.table(
+    initialScope.asserts?.map((r: any) => ({
+      status: r.success ? 'success' : 'fail',
+      assert: `${r.name}${!!r.description ? ': ' : ''}${r.description || ''}`.trim()
+    }))
+  );
 initialScope.print = (...args: any) =>
   logFn({
     time: new Date(),
