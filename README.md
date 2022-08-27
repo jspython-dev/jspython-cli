@@ -17,16 +17,16 @@ Command line interface to run [JSPython](https://github.com/jspython-dev/jspytho
 
 ```
 
-### Pass parameters to script
+### JSPython command line arguments
 In CLI
 ```
-jspython --file=path/to/jspython/file --param1=value --param
-jspython path/to/jspython/file param1=value param
+jspython --file=path/to/jspython/file --arg1=value --arg2='test value 1'
+jspython path/to/jspython/file arg1=value
 ```
-In script
+Inside your JSPython script yu can access arguments with `args` object.
 ```py
-params.param1 == "value" # true
-params.param == false # true
+a1 = args.arg1
+a2 = args.arg2 or 'another value'
 ```
 
 ### Run file
@@ -54,7 +54,7 @@ jspython -f path/to/jspython/file.jspy -e myFunc1
 ```
 jspython --file=path/to/jspython/file.jspy --srcRoot=src
 ```
-Normally you would expect package.json and node_modules to be in the root level and all scripts in the `src` folder
+Normally, you would expect package.json and node_modules to be in the root level and all scripts in the `src` folder
 
 ```
 -|- .git

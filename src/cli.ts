@@ -75,7 +75,7 @@ function getOptionsFromArguments(rawArgs: string[]): InterpreterOptions {
 async function main() {
   const options = getOptionsFromArguments(process.argv);
   const interpreter: Interpreter = (await jsPythonForNode(options)) as Interpreter;
-  const jspyContext: Record<string, any> = { ...initialScope, ...{ params: options.params } };
+  const jspyContext: Record<string, any> = { ...initialScope, ...{ args: options.params } };
 
   if (options.version) {
     console.log(interpreter.jsPythonInfo());

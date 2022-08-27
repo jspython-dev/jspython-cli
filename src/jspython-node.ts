@@ -6,12 +6,15 @@ import { trimChar } from './utils';
 
 const rootFolder = process.cwd().split('\\').join('/');
 export const initialScope: any = {
+  session: {},
   asserts: [] as AssertInfo[]
 };
 
 type NodeJsInterpreter = Interpreter & { evaluateFile: (fileName: string) => Promise<any> };
 export type AssertInfo = { success: boolean; name: string; description?: string };
 type LogInfo = { level: 'info' | 'fail' | 'success'; message: string; time: Date; logId?: string };
+
+let previousLogMessage = '';
 
 const context: {
   params: any;
@@ -21,8 +24,12 @@ const context: {
 
 function logFn(msg: LogInfo): void {
   const level = msg.level === 'success' ? msg.level : msg.level + '   ';
+  const message = `${level} | ${msg.message}`;
 
-  console.log(`| ${msg.time.toTimeString().slice(0, 8)} | ${level} | ${msg.message}`);
+  if (message !== previousLogMessage) {
+    console.log(`| ${msg.time.toTimeString().slice(0, 8)} | ${message}`);
+    previousLogMessage = message;
+  }
 }
 
 function assert(name: string, dataContext?: boolean | any): Assert | void {
@@ -114,10 +121,6 @@ initialScope.print = (...args: any) =>
     level: 'info',
     message: args.map((v: any) => (typeof v === 'object' ? JSON.stringify(v) : v)).join(' ')
   });
-initialScope.params = (name: string) => {
-  const value = context.params[name];
-  return value === undefined ? null : value;
-};
 
 export async function jsPythonForNode(
   options: InterpreterOptions = {
