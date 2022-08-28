@@ -6,6 +6,7 @@ import { trimChar } from './utils';
 
 const rootFolder = process.cwd().split('\\').join('/');
 export const initialScope: any = {
+  __name__: 'main',
   session: {},
   asserts: [] as AssertInfo[]
 };
